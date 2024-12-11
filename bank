@@ -1,0 +1,25 @@
+1 table users
+-------------------
+1 name
+2 email
+3 password
+4 role (admin, worker, user)
+5 salary (admin, worker)
+------------------------
+
+2 table accounts
+------------------
+
+1 user_id (foreign userga ulanadi)
+2 account_number (bu faqat unique boladi)
+3 balance
+4 valyuta (USD, EUR, UZB)
+
+
+2 table transaction
+--------------------
+
+1 from_account_id (foreign accounts uladi Jo'natuvchi hisob bolib)
+2 to_account_id (foreign accounts uladi Qabul qiluvchi hisob bolib)
+3 amount (qancha pul jonatilyotgani)
+4 fee_amount (amount xisoblanib foizi bunga qoshiladi)
