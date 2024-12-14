@@ -6,6 +6,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Transaction } from './transactions.model';
 import { Users } from 'src/users/users.model';
 import { Op } from 'sequelize';
+import { LoggerService } from 'src/logger/logger.service';
 
 @Injectable()
 export class TransactionService {
@@ -13,7 +14,22 @@ export class TransactionService {
     @InjectModel(Transaction) private readonly transactions: typeof Transaction,
     @InjectModel(Account) private readonly accounts: typeof Account,
     @InjectModel(Users) private readonly users: typeof Users,
+    private readonly loggerService: LoggerService,
   ) {}
+
+  errors = [];
+  private logError(error: any) {
+    this.errors.push(error);
+    this.loggerService.logError(error.message, { errors: error.errors });
+
+    // Agar bir nechta xatoliklar bo'lsa
+    if (this.errors.length > 1) {
+      // Hammasini bir vaqtning o'zida qaytarish
+      throw new BadRequestException('Multiple errors occurred');
+    }
+    // Agar faqat bitta xatolik bo'lsa, uni qaytarish
+    throw error;
+  }
   async create(createTransactionDto: CreateTransactionDto) {
     try {
       let fromAccount = await this.accounts.findByPk(
@@ -86,8 +102,9 @@ export class TransactionService {
 
       return { transaction, fromAccount, toAccount };
     } catch (error) {
-      console.log(error.message);
-      throw error;
+      this.logError(error);
+      // console.log(error.message);
+      // throw error;
     }
   }
 
@@ -155,7 +172,8 @@ export class TransactionService {
       return formattedTransactions;
       
     } catch (error) {
-      console.log(error.message);
+      this.logError(error);
+      // console.log(error.message);
     }
   }
 
@@ -221,8 +239,9 @@ export class TransactionService {
   
       return formattedTransactions;
     } catch (error) {
-      console.log('Error: ', error.message);
-      throw new Error('Error fetching transactions');
+      this.logError(error);
+      // console.log('Error: ', error.message);
+      // throw new Error('Error fetching transactions');
     }
   }
    
@@ -235,7 +254,8 @@ export class TransactionService {
       }
       return transaction.update(updateTransactionDto);
     } catch (error) {
-      console.log(error.message);
+      this.logError(error);
+      // console.log(error.message);
     }
   }
 
@@ -248,7 +268,8 @@ export class TransactionService {
       await transaction.destroy();
       return `Transaction with id ${id} deleted`;
     } catch (error) {
-      console.log(error.message);
+      this.logError(error);
+      // console.log(error.message);
     }
   }
 }

@@ -6,14 +6,18 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { AuthGuard } from 'src/common/auth/auth.guard';
 import { RoleGuard } from 'src/common/auth/role.guard';
 import { Roles } from 'src/common/auth/role.decarator';
+import { LoggerService } from 'src/logger/logger.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService,
+    private readonly loggerSevice: LoggerService
+  ) {}
 
   @Post('register')
   // @UseGuards(AuthGuard)
   create(@Body() createUserDto: CreateUserDto) {
+  
     return this.usersService.register(createUserDto);
   }
 

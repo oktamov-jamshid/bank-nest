@@ -4,6 +4,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { SharingModule } from './common/shering.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SharingModule } from './common/shering.module';
       autoLoadModels: true,
       synchronize: true,
     }),
+    LoggerModule,
     UsersModule,
     AccountsModule,
     TransactionModule,

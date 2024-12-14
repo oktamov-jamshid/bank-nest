@@ -1,4 +1,3 @@
-import { CreatedAt } from 'sequelize-typescript';
 import { LoginUserDto } from './dto/login-user.dto';
 import {
   BadRequestException,
@@ -14,6 +13,7 @@ import { Users } from './users.model';
 import { ConfigService } from 'src/common/config/config.service';
 import { Account } from 'src/accounts/accounts.model';
 import { Transaction } from 'src/transaction/transactions.model';
+import { LoggerService } from 'src/logger/logger.service';
 
 @Injectable()
 export class UsersService {
@@ -22,13 +22,35 @@ export class UsersService {
     @InjectModel(Account) private readonly accounts: typeof Account,
     @InjectModel(Transaction) private readonly transactions: typeof Transaction,
     private readonly configService: ConfigService,
+    private readonly loggerService: LoggerService,
   ) {}
+
+  errors = [];
+  private logError(error: any) {
+    this.errors.push(error);
+    this.loggerService.logError(error.message, { errors: error.errors });
+
+    // Agar bir nechta xatoliklar bo'lsa
+    if (this.errors.length > 1) {
+      // Barcha xatoliklarni loglash
+
+      // Hammasini bir vaqtning o'zida qaytarish
+      throw new BadRequestException('Multiple errors occurred');
+    }
+
+    // Agar faqat bitta xatolik bo'lsa, uni qaytarish
+    throw error;
+  }
+
   async register(createUserDto: CreateUserDto) {
     try {
+      // Foydalanuvchi emailini tekshirish
       const user = await this.findByUserEmail(createUserDto.email);
       if (user) {
-        throw new BadRequestException('Email already exists');
+        throw new BadRequestException('Email already existing');
       }
+
+      // Ro'lni tekshirish
       if (
         createUserDto.role !== 'admin' &&
         createUserDto.role !== 'worker' &&
@@ -37,12 +59,16 @@ export class UsersService {
         throw new BadRequestException('Invalid role');
       }
 
+      // Parolni hashlash
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+      // Foydalanuvchini yaratish
       const newUser = await this.users.create({
         ...createUserDto,
         password: hashedPassword,
       });
 
+      // Ro'lga qarab maoshni sozlash
       if (newUser.role === 'admin' || newUser.role === 'worker') {
         newUser.salary = createUserDto.salary || 0;
         await newUser.save();
@@ -54,10 +80,9 @@ export class UsersService {
 
       return newUser;
     } catch (error) {
-      console.log(error.message);
+      this.logError(error);
     }
   }
-
   async login(loginUserDto: LoginUserDto) {
     try {
       const user = await this.findByUserEmail(loginUserDto.email);
@@ -79,7 +104,7 @@ export class UsersService {
       const refreshToken = this.genetateRefreshToken({ id: user.id });
       return { accessToken, refreshToken };
     } catch (error) {
-      console.log(error.message);
+      this.logError(error);
     }
   }
 
@@ -90,7 +115,7 @@ export class UsersService {
           {
             model: this.accounts,
             attributes: ['balance', 'account_number'],
-          }
+          },
         ],
         raw: false,
       });
@@ -110,6 +135,7 @@ export class UsersService {
       });
       return formattedUsers;
     } catch (error) {
+      this.logError(error);
       console.log(error.message);
     }
   }
@@ -135,6 +161,7 @@ export class UsersService {
       };
       return formattedUser;
     } catch (error) {
+      this.logError(error);
       console.log(error.message);
     }
   }
@@ -144,6 +171,7 @@ export class UsersService {
       const user = await this.users.findByPk(id);
       return user.update(updateUserDto);
     } catch (error) {
+      this.logError(error);
       console.log(error.message);
     }
   }
@@ -153,6 +181,7 @@ export class UsersService {
       const user = await this.users.findByPk(id);
       return user.destroy();
     } catch (error) {
+      this.logError(error);
       console.log(error.message);
     }
   }
